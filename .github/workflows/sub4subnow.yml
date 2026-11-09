@@ -1,0 +1,40 @@
+name: Sub4SubNow 24x7 Bot
+
+on:
+  schedule:
+    # Runs every 5 hours to ensure continuous uptime and handle restarts
+    - cron: '0 */5 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run Bot Script
+        run: |
+          python bot_sub4subnow.py
+        continue-on-error: true
+
+      - name: Auto-Restart / Self-Dispatch Trick
+        if: always()
+        run: |
+          echo "Triggering next workflow cycle to maintain 24x7 uptime..."
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/sub4subnow.yml/dispatches \
+            -d '{"ref":"main"}'
